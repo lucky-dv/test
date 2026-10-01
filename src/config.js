@@ -7,7 +7,7 @@ window.MOTION_CONFIG = {
   width: 1080,
   height: 1350,
   fps: 30,
-  duration: 9.4,
+  duration: 9.8,
 
   // ---------------------------------------------------------------- source
   resumeSrc: 'assets/resume.png',
@@ -30,23 +30,23 @@ window.MOTION_CONFIG = {
     pushInAmount: 0.015,      // 1.5 % scale-up over shot 1
     // Shot 2: pressure / hairline cracks
     crackStart: 1.0,
-    primaryCracksDone: 2.05,  // radial cracks have reached the paper edge
+    primaryCracksDone: 1.85,  // radial cracks have reached the paper edge
     // Shot 3: cracking / loss of structural integrity
-    fractureStart: 2.2,
-    secondaryCracksDone: 2.95,// full shard network visible
-    releaseStart: 2.45,       // first shards (centre) come loose
-    releaseEnd: 3.65,         // last shards (corners) come loose
+    fractureStart: 1.95,
+    secondaryCracksDone: 2.55,// full shard network visible
+    releaseStart: 2.15,       // first shards (centre) come loose
+    releaseEnd: 3.1,          // last shards (corners) come loose
     // Shot 4: vortex
-    vortexStart: 3.8,
+    vortexStart: 3.2,
     vortexStagger: 0.55,      // centre shards go first, corners this much later
-    vortexEnd: 5.25,          // every shard is consumed by this time
+    vortexEnd: 4.65,          // every shard is consumed by this time
     // Shot 5: message (hard cut)
-    cut: 5.3,
-    line1In: 5.5,
-    line2In: 6.35,
-    ctaIn: 7.05,
-    logoIn: 7.75,
-    taglineIn: 8.1,
+    cut: 4.7,
+    line1In: 4.9,
+    line2In: 5.75,
+    ctaIn: 6.45,
+    logoIn: 7.15,
+    taglineIn: 7.5,
     textInDuration: 0.75,
   },
 

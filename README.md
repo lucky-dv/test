@@ -1,6 +1,6 @@
 # Generic resumes crack under scrutiny
 
-A 1080 × 1350 (4:5) LinkedIn motion graphic, 9.4 s long. A real resume holds up for a moment, develops hairline cracks, breaks into roughly 580 shards cut from the resume itself, and gets pulled into a charcoal vortex. Then it cuts to a clean end card.
+A 1080 × 1350 (4:5) LinkedIn motion graphic, 9.8 s long. A real resume holds up for a moment, develops hairline cracks, breaks into roughly 580 shards cut from the resume itself, and gets pulled into a charcoal vortex. Then it cuts to a clean end card.
 
 The supplied resume (`assets/resume.png`) is the only source image. The code doesn't redraw, retouch or regenerate it. It fills the frame edge to edge (`resumeFit: 'cover'`), with no background or border. The 2 px dark border on the supplied image's left and right edges is trimmed off (`sourceTrim`). Because the resume is a little taller than 4:5, the plain top and bottom margins of the image fall outside the frame. `coverAnchorY` keeps everything from the name down to the last Achievements row in view. Every shard is a clipped piece of that same image, which is why text, rules and bits of the photo stay visible as it breaks apart.
 
@@ -40,10 +40,10 @@ You need Node 18+, ffmpeg and Playwright's Chromium. The script uses a global Pl
 | Shot | Time | What happens |
 | --- | --- | --- |
 | 1 · Resume | 0.0–1.0 | The resume as supplied, full-bleed, with a 1.5 % push-in that starts from rest |
-| 2 · Pressure | 1.0–2.2 | Hairline cracks start at the centre. About nine primary cracks run to the paper edge. There is sub-pixel tremor and the text stays readable |
-| 3 · Cracking | 2.2–3.8 | The secondary crack network spreads outward and hairline gaps open. Shards come loose from the centre outward and drift with inertia and friction. Paper flecks break off the fracture edges |
-| 4 · Vortex | 3.8–5.3 | A short sudden pull, then every shard falls in on a logarithmic spiral. It speeds up as the radius shrinks, shards tumble to show the blank back of the paper, and they sink into a charcoal core |
-| 5 · Message | 5.3–9.4 | Hard cut to charcoal. Headline at 5.5 s, supporting line at 6.35 s, CTA at 7.05 s, graph logo at 7.75 s and the tagline “Built for Data, AI and Analytics professionals” at 8.1 s |
+| 2 · Pressure | 1.0–1.95 | Hairline cracks start at the centre. About nine primary cracks run to the paper edge. There is sub-pixel tremor and the text stays readable |
+| 3 · Cracking | 1.95–3.2 | The secondary crack network spreads outward and hairline gaps open. Shards come loose from the centre outward and drift with inertia and friction. Paper flecks break off the fracture edges |
+| 4 · Vortex | 3.2–4.7 | A short sudden pull, then every shard falls in on a logarithmic spiral. It speeds up as the radius shrinks, shards tumble to show the blank back of the paper, and they sink into a charcoal core |
+| 5 · Message | 4.7–9.8 | Hard cut to charcoal. Headline at 4.9 s, supporting line at 5.75 s, CTA at 6.45 s, graph logo at 7.15 s and the tagline “Built for Data, AI and Analytics professionals” at 7.5 s. The finished end card holds for about 2 s |
 
 To retime anything, change it in `config.js`. Crack growth, shard release order and the vortex schedule all follow from those values.
 
