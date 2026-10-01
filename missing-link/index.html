@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Missing Link</title>
+<style>
+  :root { --bg: #1b1b1b; --ui: #e9e7e3; --ui-dim: #8d8a85; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ui);
+    font-family: system-ui, sans-serif; }
+  #stage { position: relative; overflow: hidden; transform-origin: 0 0; background: #F6F5F0; }
+  #c { display: block; }
+
+  /* ---------- preview chrome ---------- */
+  #wrap { display: flex; flex-direction: column; align-items: center; gap: 14px;
+    padding: 16px; min-height: 100%; }
+  #frame { position: relative; box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+  #bar { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 640px;
+    font-size: 13px; font-variant-numeric: tabular-nums; }
+  #bar button, #bar select { background: #2a2a2a; color: var(--ui); border: 1px solid #3a3a3a;
+    border-radius: 6px; padding: 6px 12px; font: inherit; cursor: pointer; min-width: 64px; }
+  #bar input[type=range] { flex: 1; accent-color: #e9e7e3; }
+  #meta { width: 100%; max-width: 640px; display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--ui-dim); }
+  body.render #bar, body.render #meta { display: none; }
+  body.render #wrap { padding: 0; gap: 0; align-items: flex-start; }
+  body.render #frame { box-shadow: none; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="frame"><div id="stage"><canvas id="c"></canvas></div></div>
+  <div id="bar">
+    <button id="play">Pause</button>
+    <input id="scrub" type="range" min="0" max="16" step="0.001" value="0">
+    <span id="time">0.00s</span>
+    <select id="fmt"><option value="portrait">4:5</option><option value="landscape">3:2</option></select>
+  </div>
+  <div id="meta"><span id="shot"></span><span id="dims"></span></div>
+</div>
+
+<script src="src/config.js"></script>
+<script src="src/engine.js"></script>
+<script>
+(async function () {
+  const C = window.MOTION_CONFIG;
+  const q = new URLSearchParams(location.search);
+  const renderMode = q.has('render');
+  const format = q.get('format') || 'portrait';
+  if (renderMode) document.body.classList.add('render');
+
+  const fmt = await Motion.init(format);
+  const stage = document.getElementById('stage'), frame = document.getElementById('frame');
+  stage.style.width = fmt.width + 'px'; stage.style.height = fmt.height + 'px';
+
+  if (renderMode) {
+    window.__renderFrame = t => Motion.renderFrame(t);
+    window.__verify = () => Motion.verify();
+    window.__format = fmt;
+    window.__stats = Motion.stats();
+    window.__ready = true;
+    return;
+  }
+
+  const scrub = document.getElementById('scrub'), time = document.getElementById('time');
+  const play = document.getElementById('play'), shot = document.getElementById('shot');
+  const sel = document.getElementById('fmt');
+  sel.value = format;
+  sel.onchange = () => { q.set('format', sel.value); location.search = q.toString(); };
+  document.getElementById('dims').textContent =
+    `${fmt.width} × ${fmt.height} · space = play/pause · ← → = frame step`;
+  scrub.max = C.duration;
+
+  function fit() {
+    const s = Math.min((innerWidth - 32) / fmt.width, (innerHeight - 110) / fmt.height, 1);
+    stage.style.transform = `scale(${s})`;
+    frame.style.width = fmt.width * s + 'px';
+    frame.style.height = fmt.height * s + 'px';
+  }
+  addEventListener('resize', fit); fit();
+
+  let playing = true, t = 0, last = performance.now();
+  const draw = () => {
+    Motion.renderFrame(Math.min(t, C.duration));
+    scrub.value = t; time.textContent = Math.min(t, C.duration).toFixed(2) + 's'; shot.textContent = Motion.shotAt(t);
+  };
+  function tick(now) {
+    if (playing) { t += (now - last) / 1000; if (t > C.duration + 0.8) t = 0; }
+    last = now; draw(); requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  const toggle = () => { playing = !playing; play.textContent = playing ? 'Pause' : 'Play'; };
+  play.onclick = toggle;
+  scrub.oninput = () => { t = +scrub.value; if (playing) toggle(); };
+  addEventListener('keydown', e => {
+    if (e.code === 'Space') { e.preventDefault(); toggle(); }
+    if (e.code === 'ArrowRight') { if (playing) toggle(); t = Math.min(C.duration, t + 1 / C.fps); }
+    if (e.code === 'ArrowLeft') { if (playing) toggle(); t = Math.max(0, t - 1 / C.fps); }
+  });
+})();
+</script>
+</body>
+</html>
