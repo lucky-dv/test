@@ -92,10 +92,19 @@
     img = await loadImage(C.resumeSrc);
 
     // Fit the resume, snapped to whole pixels so frame 0 is drawn 1:1.
-    RH = Math.round(H * C.resumeFit);
-    RW = Math.round(RH * img.naturalWidth / img.naturalHeight);
+    const tr = Object.assign({ left: 0, right: 0, top: 0, bottom: 0 }, C.sourceTrim);
+    const SX = tr.left, SY = tr.top;
+    const SW = img.naturalWidth - tr.left - tr.right, SH = img.naturalHeight - tr.top - tr.bottom;
+    const aspect = SW / SH;
+    if (C.resumeFit === 'cover') {           // full-bleed: no background, no border
+      const s = Math.max(W / SW, H / SH);
+      RW = Math.round(SW * s); RH = Math.round(SH * s);
+    } else {
+      RH = Math.round(H * C.resumeFit);
+      RW = Math.round(RH * aspect);
+    }
     RX = Math.round((W - RW) / 2);
-    RY = Math.round((H - RH) / 2);
+    RY = Math.round((H - RH) * (C.resumeFit === 'cover' ? C.coverAnchorY ?? 0.5 : 0.5));
     OX = CX - RX; OY = CY - RY; // composition centre in paper coordinates
 
     paper = document.createElement('canvas');
@@ -103,7 +112,11 @@
     const pctx = paper.getContext('2d', { willReadFrequently: true });
     pctx.imageSmoothingEnabled = true;
     pctx.imageSmoothingQuality = 'high';
-    pctx.drawImage(img, 0, 0, RW, RH);
+    // Crop first (so resampling never sees the trimmed border), then scale.
+    const crop = document.createElement('canvas');
+    crop.width = SW; crop.height = SH;
+    crop.getContext('2d').drawImage(img, SX, SY, SW, SH, 0, 0, SW, SH);
+    pctx.drawImage(crop, 0, 0, RW, RH);
     paperData = pctx.getImageData(0, 0, RW, RH).data;
 
     buildFracture();
@@ -438,12 +451,24 @@
   }
 
   // ------------------------------------------------------------------ camera
+  // Push-in: speed eases up from rest, then settles to ~40 % after shot 1
+  // (no kinks). Integrated once, scaled so shot 1 ends at +pushInAmount.
+  const ZOOM_DT = 1 / 240, zoomTable = (() => {
+    const n = Math.ceil(C.duration / ZOOM_DT) + 2, z = new Float64Array(n);
+    const v = t => (1 - Math.exp(-t / 0.3)) *
+      (t <= T.pushInEnd ? 1 : 0.4 + 0.6 * Math.exp(-(t - T.pushInEnd) / 0.5));
+    for (let i = 1; i < n; i++) z[i] = z[i - 1] + v((i - 0.5) * ZOOM_DT) * ZOOM_DT;
+    const k = T.pushInAmount / z[Math.round(T.pushInEnd / ZOOM_DT)];
+    return z.map(x => x * k);
+  })();
+  const zoomAt = t => {
+    const f = clamp(t, 0, C.duration) / ZOOM_DT, i = Math.floor(f);
+    return lerp(zoomTable[i], zoomTable[i + 1], f - i);
+  };
+
   function camera(t) {
     // Slow push-in that eases in from rest, then a pull toward the core.
-    const tau = 0.35;
-    const lin = t - tau * (1 - Math.exp(-t / tau));
-    const rate = T.pushInAmount / (T.pushInEnd - tau * (1 - Math.exp(-T.pushInEnd / tau)));
-    let s = 1 + rate * Math.min(lin, T.vortexStart);
+    let s = 1 + zoomAt(t);
     s += 0.07 * easeInCubic(clamp((t - T.vortexStart) / (T.cut - T.vortexStart)));
     // Micro-vibration under pressure, fading once the sheet has broken.
     const v = smooth(T.crackStart + 0.1, T.fractureStart, t) * (1 - smooth(T.releaseStart, T.vortexStart, t));
@@ -505,9 +530,10 @@
     // Background.
     ctx.fillStyle = P.background;
     ctx.fillRect(0, 0, W, H);
-    const lift = ctx.createRadialGradient(CX, CY * 0.9, 0, CX, CY * 0.9, H * 0.75);
-    lift.addColorStop(0, 'rgba(255,255,255,0.32)');
-    lift.addColorStop(1, 'rgba(255,255,255,0)');
+    // Depth: the backdrop falls off to near-black at the centre.
+    const lift = ctx.createRadialGradient(CX, CY, 0, CX, CY, H * 0.62);
+    lift.addColorStop(0, 'rgba(0,0,0,0.6)');
+    lift.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = lift;
     ctx.fillRect(0, 0, W, H);
 
@@ -624,6 +650,8 @@
     el('l2').innerHTML = C.copy.line2;
     el('ctaLead').textContent = C.copy.ctaLead;
     el('ctaUrlText').textContent = C.copy.ctaUrl;
+    el('logo').style.setProperty('--logo', `url("${C.copy.logoSrc}")`);
+    el('tagline').textContent = C.copy.tagline;
   }
   function reveal(node, t, t0, dist) {
     const k = clamp((t - t0) / T.textInDuration);
@@ -643,6 +671,8 @@
     reveal(el('cta'), t, T.ctaIn, 14);
     const uk = easeOutQuart(clamp((t - T.ctaIn - 0.3) / 0.6));
     el('ctaLine').style.transform = `scaleX(${uk.toFixed(4)})`;
+    reveal(el('logo'), t, T.logoIn, 12);
+    reveal(el('tagline'), t, T.taglineIn, 10);
   }
 
   // ------------------------------------------------------------------ frame
@@ -673,7 +703,10 @@
 
   window.Motion = {
     config: C,
-    init: async () => { setupCopy(); await document.fonts.ready; await init(); },
+    init: async () => {
+      setupCopy();
+      await Promise.all([document.fonts.ready, loadImage(C.copy.logoSrc), init()]);
+    },
     renderFrame,
     shotAt: t => t < T.crackStart ? 'Shot 1 · Resume' : t < T.fractureStart ? 'Shot 2 · Pressure'
       : t < T.vortexStart ? 'Shot 3 · Cracking' : t < T.cut ? 'Shot 4 · Vortex' : 'Shot 5 · Message',

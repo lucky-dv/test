@@ -7,35 +7,46 @@ window.MOTION_CONFIG = {
   width: 1080,
   height: 1350,
   fps: 30,
-  duration: 9.6,
+  duration: 9.4,
 
   // ---------------------------------------------------------------- source
   resumeSrc: 'assets/resume.png',
-  // Resume height as a fraction of frame height (it is centred).
-  resumeFit: 0.875,
+  // 'cover' = full-bleed, edge-to-edge (centred, overflow cropped top/bottom).
+  // A number (e.g. 0.875) = fit that fraction of the frame height, centred.
+  resumeFit: 'cover',
+  // With 'cover', the share of the vertical overflow cropped from the top.
+  // 0.43 keeps the name and the last Achievements row in frame (only the
+  // plain margins/bars of the supplied image fall outside).
+  coverAnchorY: 0.43,
+  // Pixels trimmed off the supplied image before use. The source has a 2px
+  // dark border on its left and right edges, removed so the frame is truly
+  // edge-to-edge. Nothing inside the resume is touched.
+  sourceTrim: { left: 2, right: 2, top: 0, bottom: 0 },
 
   // ---------------------------------------------------------------- timing
   timing: {
     // Shot 1: static resume with a slow push-in
-    pushInEnd: 2.0,
-    pushInAmount: 0.025,      // 2.5 % scale-up over shot 1
+    pushInEnd: 1.0,
+    pushInAmount: 0.015,      // 1.5 % scale-up over shot 1
     // Shot 2: pressure / hairline cracks
-    crackStart: 2.0,
-    primaryCracksDone: 3.05,  // radial cracks have reached the paper edge
+    crackStart: 1.0,
+    primaryCracksDone: 2.05,  // radial cracks have reached the paper edge
     // Shot 3: cracking / loss of structural integrity
-    fractureStart: 3.2,
-    secondaryCracksDone: 3.95,// full shard network visible
-    releaseStart: 3.45,       // first shards (centre) come loose
-    releaseEnd: 4.65,         // last shards (corners) come loose
+    fractureStart: 2.2,
+    secondaryCracksDone: 2.95,// full shard network visible
+    releaseStart: 2.45,       // first shards (centre) come loose
+    releaseEnd: 3.65,         // last shards (corners) come loose
     // Shot 4: vortex
-    vortexStart: 4.8,
+    vortexStart: 3.8,
     vortexStagger: 0.55,      // centre shards go first, corners this much later
-    vortexEnd: 6.25,          // every shard is consumed by this time
+    vortexEnd: 5.25,          // every shard is consumed by this time
     // Shot 5: message (hard cut)
-    cut: 6.3,
-    line1In: 6.5,
-    line2In: 7.35,
-    ctaIn: 8.05,
+    cut: 5.3,
+    line1In: 5.5,
+    line2In: 6.35,
+    ctaIn: 7.05,
+    logoIn: 7.75,
+    taglineIn: 8.1,
     textInDuration: 0.75,
   },
 
@@ -62,7 +73,7 @@ window.MOTION_CONFIG = {
 
   // ---------------------------------------------------------------- palette
   palette: {
-    background: '#E9E7E3',    // neutral warm grey (shots 1-4)
+    background: '#141414',    // revealed behind the shards as they separate
     charcoal: '#141414',      // vortex core + end card
     paperBack: '#EEEBE6',     // back face of paper shards
     crack: 'rgba(28,26,24,1)',
@@ -77,5 +88,7 @@ window.MOTION_CONFIG = {
     line2: 'Add the missing context &amp; evidence<br>behind your work.',
     ctaLead: 'See what’s missing',
     ctaUrl: 'mygraph.id',
+    logoSrc: 'assets/graph-logo.png',
+    tagline: 'Built for Data, AI and Analytics professionals',
   },
 };
