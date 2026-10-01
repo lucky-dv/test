@@ -1,0 +1,17 @@
+{
+  "name": "resume-scrutiny-motion",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generic resume cracks under scrutiny and is pulled into a vortex – 1080x1350 LinkedIn motion graphic.",
+  "type": "module",
+  "scripts": {
+    "preview": "npx --yes serve -l 5173 .",
+    "render": "node scripts/render.mjs",
+    "render:60": "node scripts/render.mjs --fps 60 --out out/resume-scrutiny-60fps.mp4",
+    "render:draft": "node scripts/render.mjs --no-blur --out out/draft.mp4",
+    "stills": "node scripts/render.mjs --stills 0,2.6,3.6,4.4,5.2,5.7,7.2,9.5"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  }
+}

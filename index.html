@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resume Under Scrutiny</title>
+<style>
+  @font-face {
+    font-family: 'Inter';
+    src: url('assets/fonts/InterVariable-latin.woff2') format('woff2');
+    font-weight: 100 900;
+    font-display: block;
+  }
+  :root {
+    --bg: #1b1b1b;
+    --ui: #e9e7e3;
+    --ui-dim: #8d8a85;
+    --char: #141414;
+    --t1: #F3F0EA;
+    --t2: #A39F98;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ui);
+    font-family: 'Inter', system-ui, sans-serif; }
+
+  /* ---------- stage: always authored at 1080 × 1350 ---------- */
+  #stage { position: relative; width: 1080px; height: 1350px; overflow: hidden;
+    background: var(--char); transform-origin: 0 0; }
+  #c { position: absolute; inset: 0; width: 1080px; height: 1350px; display: block; }
+
+  #card { position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center;
+    padding: 0 96px 40px; visibility: hidden; }
+  #l1 { margin: 0; font-size: 86px; line-height: 1.04; font-weight: 640;
+    letter-spacing: -0.038em; color: var(--t1); font-optical-sizing: auto; }
+  #rule { width: 64px; height: 2px; margin: 58px 0 50px; background: #4a4844;
+    transform-origin: 50% 50%; transform: scaleX(0); }
+  #l2 { margin: 0; font-size: 37px; line-height: 1.34; font-weight: 420;
+    letter-spacing: -0.012em; color: var(--t2); }
+  #cta { margin-top: 104px; display: flex; align-items: center; gap: 18px;
+    font-size: 32px; font-weight: 480; letter-spacing: -0.01em; color: var(--t2); }
+  #cta svg { width: 30px; height: 30px; flex: none; }
+  #ctaUrl { position: relative; color: var(--t1); font-weight: 640; }
+  #ctaLine { position: absolute; left: 0; right: 0; bottom: -9px; height: 2px;
+    background: var(--t1); opacity: .9; transform-origin: 0 50%; transform: scaleX(0); }
+  #l1, #l2, #cta { opacity: 0; will-change: transform, opacity; }
+
+  /* ---------- preview chrome ---------- */
+  #wrap { display: flex; flex-direction: column; align-items: center; gap: 14px;
+    padding: 16px; min-height: 100%; }
+  #frame { position: relative; box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+  #bar { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 640px;
+    font-size: 13px; font-variant-numeric: tabular-nums; }
+  #bar button { background: #2a2a2a; color: var(--ui); border: 1px solid #3a3a3a;
+    border-radius: 6px; padding: 6px 12px; font: inherit; cursor: pointer; min-width: 64px; }
+  #bar input[type=range] { flex: 1; accent-color: #e9e7e3; }
+  #bar label { color: var(--ui-dim); display: flex; gap: 6px; align-items: center; white-space: nowrap; }
+  #meta { width: 100%; max-width: 640px; display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--ui-dim); }
+  body.render #bar, body.render #meta { display: none; }
+  body.render #wrap { padding: 0; gap: 0; align-items: flex-start; }
+  body.render #frame { box-shadow: none; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="frame">
+    <div id="stage">
+      <canvas id="c"></canvas>
+      <div id="card">
+        <h1 id="l1"></h1>
+        <div id="rule"></div>
+        <p id="l2"></p>
+        <div id="cta">
+          <span id="ctaLead"></span>
+          <svg viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 15h21M18 8l7 7-7 7"/>
+          </svg>
+          <span id="ctaUrl"><span id="ctaUrlText"></span><i id="ctaLine"></i></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="bar">
+    <button id="play">Pause</button>
+    <input id="scrub" type="range" min="0" max="9.6" step="0.001" value="0">
+    <span id="time">0.00s</span>
+    <label><input id="mb" type="checkbox"> Motion blur</label>
+  </div>
+  <div id="meta"><span id="shot"></span><span>1080 × 1350 · space = play/pause · ← → = frame step</span></div>
+</div>
+
+<script src="vendor/d3-delaunay.min.js"></script>
+<script src="src/config.js"></script>
+<script src="src/engine.js"></script>
+<script>
+(async function () {
+  const C = window.MOTION_CONFIG;
+  const renderMode = new URLSearchParams(location.search).has('render');
+  if (renderMode) document.body.classList.add('render');
+
+  await Motion.init();
+
+  if (renderMode) {
+    window.__renderFrame = (t, mb) => Motion.renderFrame(t, { motionBlur: mb });
+    window.__stats = Motion.stats();
+    window.__ready = true;
+    return;
+  }
+
+  const stage = document.getElementById('stage'), frame = document.getElementById('frame');
+  const scrub = document.getElementById('scrub'), time = document.getElementById('time');
+  const play = document.getElementById('play'), shot = document.getElementById('shot');
+  const mb = document.getElementById('mb');
+  scrub.max = C.duration;
+
+  function fit() {
+    const s = Math.min((innerWidth - 32) / C.width, (innerHeight - 110) / C.height, 1);
+    stage.style.transform = `scale(${s})`;
+    frame.style.width = C.width * s + 'px';
+    frame.style.height = C.height * s + 'px';
+  }
+  addEventListener('resize', fit); fit();
+
+  let playing = true, t = 0, last = performance.now();
+  const draw = () => {
+    Motion.renderFrame(t, { motionBlur: mb.checked });
+    scrub.value = t; time.textContent = t.toFixed(2) + 's'; shot.textContent = Motion.shotAt(t);
+  };
+  function tick(now) {
+    if (playing) {
+      t += (now - last) / 1000;
+      if (t > C.duration + 0.8) t = 0;   // short hold, then loop
+    }
+    last = now;
+    draw();
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  const toggle = () => { playing = !playing; play.textContent = playing ? 'Pause' : 'Play'; };
+  play.onclick = toggle;
+  scrub.oninput = () => { t = +scrub.value; if (playing) toggle(); };
+  addEventListener('keydown', e => {
+    if (e.code === 'Space') { e.preventDefault(); toggle(); }
+    if (e.code === 'ArrowRight') { if (playing) toggle(); t = Math.min(C.duration, t + 1 / C.fps); }
+    if (e.code === 'ArrowLeft') { if (playing) toggle(); t = Math.max(0, t - 1 / C.fps); }
+  });
+})();
+</script>
+</body>
+</html>
